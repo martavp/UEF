@@ -76,6 +76,7 @@ def retrieve_inverter(data_path, clean_data, inverter, start_date, end_date, tz)
         input_data.index = pd.to_datetime(input_data.index).tz_localize(tz=tz)
 
         clean_data.loc[input_data.index,['Inverter {} Total input power (kW)'.format(inverter)]] = input_data['Total input power(kW)']
+        clean_data.loc[input_data.index,['Inverter {} Total output power (kW)'.format(inverter)]] = input_data['Active power(kW)']
         for pv_string in [1,2,3,4,5,6,7,8]:
             clean_data.loc[input_data.index,['Inverter {} PV{} input current(A)'.format(inverter,pv_string)]] = input_data['PV{} input current(A)'.format(pv_string)]
             clean_data.loc[input_data.index,['Inverter {} PV{} input voltage(V)'.format(inverter,pv_string)]] = input_data['PV{} input voltage(V)'.format(pv_string)]
@@ -107,7 +108,7 @@ def retrieve_weather_station_data(data_path, clean_data, start_date, end_date, t
                                    header=0, 
                                    skiprows=3,
                                    engine='openpyxl').squeeze("columns")
-        input_data.index = pd.to_datetime(input_data.index).tz_localize(tz=tz)
+        input_data.index = pd.to_datetime(input_data.index).tz_localize(tz=tz) #, ambiguous='NaT')
         for sensor in ['1','2','3','4']:          
             irradiance=input_data[input_data['ManageObject']=='Logger-HV24C0309673/irradiance {}'.format(sensor)]        
             clean_data.loc[irradiance.index,['irradiance sensor{}(W/m2)'.format(sensor)]] = irradiance['Irradiance(W/㎡)']
@@ -121,7 +122,7 @@ def retrieve_weather_station_data(data_path, clean_data, start_date, end_date, t
 # Create empty dataframe to be populated
 tz = 'UTC' 
 start_date = '2024-09-01 00:00:00' # '2025-05-27 00:00:00' 
-end_date = '2025-10-01 23:55:00'
+end_date = '2025-10-31 23:55:00'
 time_index = pd.date_range(start=start_date, 
                                end=end_date, 
                                freq='5min',  
@@ -137,29 +138,33 @@ time_index_hour = pd.date_range(start=start_date,
 data_path='data/inverter_monthly_datafiles/'
 for inverter in [1,2]:
     clean_data = retrieve_inverter(data_path, 
-                                   clean_data, 
-                                   inverter=inverter,
-                                   start_date = start_date, 
-                                   end_date = end_date, 
-                                   tz='CET')
+                                    clean_data, 
+                                    inverter=inverter,
+                                    start_date = start_date, 
+                                    end_date = end_date, 
+                                    tz='CET')
 
 #retrieve data from weather station installed next to the solar panels 
-#(data available from: 01/09/2025)
+#(data available from: 12/08/2025)
 data_path='data/weather_monthly_datafiles/'
 clean_data = retrieve_weather_station_data(data_path, 
                                            clean_data, 
-                                           start_date='2025-09-01 00:00:00',
-                                           end_date = end_date, 
+                                           start_date='2025-09-12 00:00:00',
+                                           end_date = '2025-09-30 00:00:00', #end_date, 
                                            tz='CET')
 
 
 #retrive solar radiation data data measured at the closest DMI weather station
 clean_data = retrieve_DMI_measured_GHI(clean_data,  
-                                       start_date='2025-01-01 00:00:00',
-                                       end_date='2025-09-15 00:00:00', 
-                                       tz='UCT',
-                                       stationId = "06072",) 
+                                        start_date='2025-01-01 00:00:00',
+                                        end_date='2025-09-15 00:00:00', 
+                                        tz='UCT',
+                                        stationId = "06072",) 
 
+# save clean data including monthly values (5-minute values into total energy)
+clean_data_monthly = (1/12)*clean_data.groupby([(clean_data.index.year), (clean_data.index.month)]).sum()
+
+clean_data_monthly.to_csv('resources/clean_data_monthly.csv')
 
 # Plot summary of available clean data
 clean_data_plot=clean_data.astype(float)
