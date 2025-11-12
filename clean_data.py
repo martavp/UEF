@@ -40,12 +40,12 @@ def retrieve_DMI_measured_GHI(clean_data,start_date, end_date, tz, stationId):
                     if props.get("stationId") == stationId and props.get("parameterId") == "radia_glob":
                         observed = props.get("observed")
                         valor = props.get("value")  
-                        clean_data.loc[observed,'GHI']= valor
+                        clean_data.loc[observed,'GHI (W/m2)']= valor
                 except json.JSONDecodeError:
                     continue
                 
     #DMI data is only provided every 10 minutes but inverter data is recorded every 5 minutes
-    clean_data['GHI'].interpolate(method='linear',  inplace=True)
+    clean_data['GHI (W/m2)'].interpolate(method='linear',  inplace=True)
     clean_data.to_csv('resources/clean_data.csv')
     return clean_data
 
@@ -108,12 +108,13 @@ def retrieve_weather_station_data(data_path, clean_data, start_date, end_date, t
                                    header=0, 
                                    skiprows=3,
                                    engine='openpyxl').squeeze("columns")
-        input_data.index = pd.to_datetime(input_data.index).tz_localize(tz=tz) #, ambiguous='NaT')
         for sensor in ['1','2','3','4']:          
-            irradiance=input_data[input_data['ManageObject']=='Logger-HV24C0309673/irradiance {}'.format(sensor)]        
-            clean_data.loc[irradiance.index,['irradiance sensor{}(W/m2)'.format(sensor)]] = irradiance['Irradiance(W/㎡)']
+            irradiance=input_data[input_data['ManageObject']=='Logger-HV24C0309673/irradiance {}'.format(sensor)]      
+            irradiance.index = pd.to_datetime(irradiance.index).tz_localize(tz=tz, ambiguous='infer')
+            clean_data.loc[irradiance.index,['irradiance sensor{} (W/m2)'.format(sensor)]] = irradiance['Irradiance(W/㎡)']
 
         temp=input_data[input_data['ManageObject']=='Logger-HV24C0309673/ambient air temp']        
+        temp.index = pd.to_datetime(temp.index).tz_localize(tz=tz, ambiguous='infer')
         clean_data.loc[temp.index,['Ambient temperature (C)']]= temp['Ambient temperature(℃)']        
 
     clean_data.to_csv('resources/clean_data.csv')
@@ -149,20 +150,26 @@ for inverter in [1,2]:
 data_path='data/weather_monthly_datafiles/'
 clean_data = retrieve_weather_station_data(data_path, 
                                            clean_data, 
-                                           start_date='2025-09-12 00:00:00',
-                                           end_date = '2025-09-30 00:00:00', #end_date, 
+                                           start_date='2025-08-12 00:00:00',
+                                           end_date = end_date, 
                                            tz='CET')
 
 
 #retrive solar radiation data data measured at the closest DMI weather station
 clean_data = retrieve_DMI_measured_GHI(clean_data,  
                                         start_date='2025-01-01 00:00:00',
-                                        end_date='2025-09-15 00:00:00', 
+                                        end_date='2025-09-15 00:00:00', #latest downloaded datafile
                                         tz='UCT',
                                         stationId = "06072",) 
 
 # save clean data including monthly values (5-minute values into total energy)
-clean_data_monthly = (1/12)*clean_data.groupby([(clean_data.index.year), (clean_data.index.month)]).sum()
+clean_data_monthly = (1/12)*clean_data[['Inverter 1 Total output power (kW)',
+                                        'Inverter 2 Total output power (kW)',
+                                        'GHI (W/m2)',
+                                        'irradiance sensor1 (W/m2)',
+                                        'irradiance sensor2 (W/m2)',
+                                        'irradiance sensor3 (W/m2)',
+                                        'irradiance sensor4 (W/m2)']].groupby([(clean_data.index.year), (clean_data.index.month)]).sum()
 
 clean_data_monthly.to_csv('resources/clean_data_monthly.csv')
 
@@ -170,7 +177,7 @@ clean_data_monthly.to_csv('resources/clean_data_monthly.csv')
 clean_data_plot=clean_data.astype(float)
 plt.subplots(figsize=(20,15))
 ax = sns.heatmap(clean_data_plot.loc[time_index_hour].abs()/clean_data_plot.loc[time_index_hour].abs().max(), 
-                 cmap="plasma", mask=clean_data_plot.loc[time_index_hour].isnull())
+                  cmap="plasma", mask=clean_data_plot.loc[time_index_hour].isnull())
 ticklabels = [time_index_hour[int(tick)].strftime('%Y-%m-%d') for tick in ax.get_yticks()]
 ax.set_yticklabels(ticklabels);
 plt.savefig('Figures/summary_clean_data.jpg', dpi=300, bbox_inches='tight')
