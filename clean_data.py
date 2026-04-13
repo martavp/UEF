@@ -27,9 +27,9 @@ def retrieve_DMI_measured_GHI(clean_data,start_date, end_date, tz, stationId):
     
     for d in time_index_day:
     
-        #fn='D:/DMI_weather_station/{}/{}-{}-{}.txt'.format(d.year, d.year, str(d.month).zfill(2), str(d.day).zfill(2))    
-        fn='C:/Users/34620/Downloads/{}/{}-{}-{}.txt'.format(d.year, d.year, str(d.month).zfill(2), str(d.day).zfill(2)) 
-        print('retrieving ' + fn)  
+        fn='D:/DMI_weather_station/{}/{}-{}-{}.txt'.format(d.year, d.year, str(d.month).zfill(2), str(d.day).zfill(2))    
+        #fn='C:/Users/34620/Downloads/{}/{}-{}-{}.txt'.format(d.year, d.year, str(d.month).zfill(2), str(d.day).zfill(2)) 
+        #print('retrieving ' + fn)  
 
         with open(fn, 'r', encoding='utf-8') as f:
             for line in f:
@@ -123,7 +123,7 @@ def retrieve_weather_station_data(data_path, clean_data, start_date, end_date, t
 # Create empty dataframe to be populated
 tz = 'UTC' 
 start_date = '2024-09-01 00:00:00' # '2025-05-27 00:00:00' 
-end_date = '2025-10-31 23:55:00'
+end_date = '2026-04-11 23:55:00'
 time_index = pd.date_range(start=start_date, 
                                end=end_date, 
                                freq='5min',  
@@ -157,8 +157,8 @@ clean_data = retrieve_weather_station_data(data_path,
 
 #retrive solar radiation data data measured at the closest DMI weather station
 clean_data = retrieve_DMI_measured_GHI(clean_data,  
-                                        start_date='2025-01-01 00:00:00',
-                                        end_date='2025-09-15 00:00:00', #latest downloaded datafile
+                                        start_date=start_date, #'2024-01-01 00:00:00',
+                                        end_date=end_date, #'2026-01-12 00:00:00', #latest downloaded datafile
                                         tz='UCT',
                                         stationId = "06072",) 
 
