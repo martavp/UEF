@@ -4,7 +4,7 @@ ytick.labelsize : 24
 xtick.direction : in
 ytick.direction : in
 axes.titlesize : 24
-font.family : Arial
+font.family : DejaVu Sans
 
 #https://matplotlib.org/stable/tutorials/introductory/customizing.html#using-style-sheets
 
