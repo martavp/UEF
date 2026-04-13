@@ -13,8 +13,8 @@ data=pd.read_csv('resources/clean_data.csv',
 
 data.index = pd.to_datetime(data.index, utc=True) 
 
-start_date = '2025-09-01 00:00:00'
-end_date = '2025-09-15 00:00:00'
+start_date = '2026-03-01 00:00:00'
+end_date = '2026-04-12 00:00:00'
 tz='UTC' 
 time_index_day = pd.date_range(start=start_date, 
                                  end=end_date, 
@@ -44,10 +44,10 @@ for day in time_index_day:
     ax1=ax0.twinx()
     ax1.set_ylim([0,1000])
     ax1.set_ylabel('GHI (W/m2)')
-    ax1.plot(data['GHI'][time_index], color='gold', linestyle='--', alpha=0.8, label='DMI')
+    ax1.plot(data['GHI (W/m2)'][time_index], color='gold', linestyle='--', alpha=0.8, label='DMI')
     colors=['black', 'turquoise', 'gray', 'lime']#'gray', 'lightgray']
     for i,sensor in enumerate(['1','2','3','4']):
-        ax1.plot(data['irradiance sensor{}(W/m2)'.format(sensor)][time_index], 
+        ax1.plot(data['irradiance sensor{} (W/m2)'.format(sensor)][time_index], 
                  color=colors[i],
                  linewidth=0.8,
                  label='irradiance sensor{}'.format(sensor)) #, linestyle='--', alpha=0.8)
